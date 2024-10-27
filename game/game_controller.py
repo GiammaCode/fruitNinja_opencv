@@ -1,9 +1,10 @@
 # game/game_controller.py
 import cv2
-
 from game.bomb import Bomb
 from game.fruit import Fruit
 from game.hand_tracker import HandTracker
+from game.looseScreen import LooseScreen
+from game.menuScreen import MenuScreen
 from game.score_manager import ScoreManager
 
 
@@ -16,6 +17,11 @@ class GameController:
         self.bombs = []
         self.frames_since_last_fruit_spawn = 0
         self.frames_since_last_bomb_spawn = 0
+        self.state = "menu"  # Stato iniziale: menu
+
+        # Inizializza il menu e la schermata di sconfitta (inizialmente vuota)
+        self.menu_screen = MenuScreen()
+        self.loose_screen = None
 
     def spawn_fruit(self):
         fruit = Fruit()
@@ -46,41 +52,52 @@ class GameController:
             ret, frame = self.cap.read()
             if not ret:
                 break
-
-            # flipped mirror image
             frame = cv2.flip(frame, 1)
-
             hand_position = self.hand_tracker.track(frame)
 
-            # Genera nuova frutta ogni 50 fotogrammi
-            self.frames_since_last_fruit_spawn += 1
-            if self.frames_since_last_fruit_spawn > 40:
-                #print("spawn fruit")
-                self.spawn_fruit()
-                self.frames_since_last_fruit_spawn = 0
+            if self.state == "menu":
+                # Visualizza menu e avvia il gioco se viene premuto 'Start'
+                self.menu_screen.draw(frame)
+                if hand_position and self.menu_screen.check_start(hand_position):
+                    self.state = "playing"
 
-            # genero bomba ogni 60 fotogrammi
-            self.frames_since_last_bomb_spawn += 1
-            if self.frames_since_last_bomb_spawn > 60:
-                self.spawn_bomb()
-                self.frames_since_last_bomb_spawn = 0
+            elif self.state == "playing":
+                # Logica del gioco
+                self.frames_since_last_fruit_spawn += 1
+                if self.frames_since_last_fruit_spawn > 40:
+                    self.spawn_fruit()
+                    self.frames_since_last_fruit_spawn = 0
 
-            for bomb in self.bombs:
-                bomb.update_position()
-                if not bomb.is_cut:
-                    bomb.draw(frame)
+                self.frames_since_last_bomb_spawn += 1
+                if self.frames_since_last_bomb_spawn > 60:
+                    self.spawn_bomb()
+                    self.frames_since_last_bomb_spawn = 0
 
-            for fruit in self.fruits:
-                fruit.update_position()
-                if not fruit.is_cut:
-                    fruit.draw(frame)
+                for bomb in self.bombs:
+                    bomb.update_position()
+                    if not bomb.is_cut:
+                        bomb.draw(frame)
 
-            if hand_position:
-                self.detect_cut_fruit(hand_position)
-                self.detect_cut_bomb(hand_position)
+                for fruit in self.fruits:
+                    fruit.update_position()
+                    if not fruit.is_cut:
+                        fruit.draw(frame)
 
-            #mostra il punteggio
-            self.display_score(frame)
+                if hand_position:
+                    self.detect_cut_fruit(hand_position)
+                    self.detect_cut_bomb(hand_position)
+
+                # Controlla se il punteggio è sotto zero
+                if self.score_manager.get_score() < 0:
+                    self.loose_screen = LooseScreen(self.score_manager.get_score())
+                    self.state = "game_over"
+
+                self.display_score(frame)
+
+            elif self.state == "game_over":
+                # Visualizza schermata di sconfitta
+                self.loose_screen.draw(frame)
+
             cv2.imshow("Fruit Ninja Game", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
