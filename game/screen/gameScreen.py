@@ -1,11 +1,10 @@
-# game/game_controller.py
 import cv2
-from game.bomb import Bomb
-from game.fruit import Fruit
-from game.hand_tracker import HandTracker
-from game.looseScreen import LooseScreen
-from game.menuScreen import MenuScreen
-from game.score_manager import ScoreManager
+from game.entities.bomb import Bomb
+from game.entities.fruit import Fruit
+from game.utils.hand_tracker import HandTracker
+from game.screen.loseScreen import LoseScreen
+from game.screen.menuScreen import MenuScreen
+from game.utils.score_manager import ScoreManager
 
 
 class GameController:
@@ -22,6 +21,8 @@ class GameController:
         # Inizializza il menu e la schermata di sconfitta (inizialmente vuota)
         self.menu_screen = MenuScreen()
         self.loose_screen = None
+
+        self.background = cv2.imread('C:/Users/giamm/Desktop/fruitNinja_opencv/assets/images/background.jpeg')
 
     def spawn_fruit(self):
         fruit = Fruit()
@@ -44,8 +45,18 @@ class GameController:
                 self.score_manager.update_score(-50)
 
     def display_score(self, frame):
+        font = cv2.FONT_HERSHEY_TRIPLEX
         score_text = f"Score: {self.score_manager.get_score()}"
-        cv2.putText(frame, score_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+        cv2.putText(frame, score_text, (10, 30), font, 1, (255, 0, 0), 2, cv2.LINE_AA)
+
+    def apply_background(self, frame):
+        """Applica lo sfondo con opacità al frame della videocamera."""
+        # Ridimensiona l'immagine di sfondo per adattarla al frame della videocamera
+        background_resized = cv2.resize(self.background, (frame.shape[1], frame.shape[0]))
+
+        # Imposta l'opacità
+        opacity = 0.4
+        cv2.addWeighted(background_resized, opacity, frame, 1 - opacity, 0, frame)
 
     def run(self):
         while True:
@@ -55,6 +66,7 @@ class GameController:
             frame = cv2.flip(frame, 1)
             hand_position = self.hand_tracker.track(frame)
 
+
             if self.state == "menu":
                 # Visualizza menu e avvia il gioco se viene premuto 'Start'
                 self.menu_screen.draw(frame)
@@ -63,13 +75,15 @@ class GameController:
 
             elif self.state == "playing":
                 # Logica del gioco
+                # Applica lo sfondo semi-trasparente al frame
+                self.apply_background(frame)
                 self.frames_since_last_fruit_spawn += 1
-                if self.frames_since_last_fruit_spawn > 40:
+                if self.frames_since_last_fruit_spawn > 20:
                     self.spawn_fruit()
                     self.frames_since_last_fruit_spawn = 0
 
                 self.frames_since_last_bomb_spawn += 1
-                if self.frames_since_last_bomb_spawn > 60:
+                if self.frames_since_last_bomb_spawn > 40:
                     self.spawn_bomb()
                     self.frames_since_last_bomb_spawn = 0
 
@@ -89,7 +103,7 @@ class GameController:
 
                 # Controlla se il punteggio è sotto zero
                 if self.score_manager.get_score() < 0:
-                    self.loose_screen = LooseScreen(self.score_manager.get_score())
+                    self.loose_screen = LoseScreen(self.score_manager.get_score())
                     self.state = "game_over"
 
                 self.display_score(frame)

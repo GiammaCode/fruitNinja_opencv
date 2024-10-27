@@ -1,14 +1,17 @@
 import random
 import cv2
 
-class Bomb:
+
+class Fruit:
     def __init__(self):
         # Carica le immagini del frutto e della versione tagliata
-        self.image = cv2.imread("C:/Users/giamm/Desktop/fruitNinja_opencv/assets/images/bomb.png",cv2.IMREAD_UNCHANGED)
+        self.image = cv2.imread("C:/Users/giamm/Desktop/fruitNinja_opencv/assets/images/apple.png",cv2.IMREAD_UNCHANGED)  # Usa un percorso corretto per apple.png
+
         self.x = random.randint(50, 600)  # Posizione orizzontale iniziale
-        self.y = 0                         # Inizio dall'alto dello schermo
+        self.y = 0  # Inizio dall'alto dello schermo
         self.speed = random.randint(5, 10)  # Velocità di caduta
-        self.is_cut = False                # Stato di taglio della frutta
+        self.is_cut = False  # Stato di taglio della frutta
+        self.cut_time = None  # Timestamp del taglio
 
     def update_position(self):
         if not self.is_cut:
@@ -21,6 +24,12 @@ class Bomb:
             return distance < 50  # Distanza limite per rilevare un taglio
 
     def draw(self, frame):
+        """
+        Sovrappone l'immagine del frutto al frame alla posizione (self.x, self.y),
+        gestendo la trasparenza se l'immagine ha un canale alpha.
+
+        :param frame: Il frame della videocamera su cui disegnare l'immagine.
+        """
         h, w, _ = self.image.shape  # Ottieni altezza e larghezza dell'immagine del frutto
         # Controlla che l'immagine non esca dai bordi del frame
         if self.y + h >= frame.shape[0] or self.x + w >= frame.shape[1]:

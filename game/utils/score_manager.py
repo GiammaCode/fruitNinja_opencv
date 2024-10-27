@@ -1,4 +1,3 @@
-# game/score_manager.py
 class ScoreManager:
     def __init__(self):
         self.score = 0
