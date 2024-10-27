@@ -35,7 +35,11 @@ class GameController:
         for bomb in self.bombs:
             if not bomb.is_cut and bomb.check_collision(hand_position):
                 bomb.is_cut = True
-                # self.score_manager.update_score(10)
+                self.score_manager.update_score(-50)
+
+    def display_score(self, frame):
+        score_text = f"Score: {self.score_manager.get_score()}"
+        cv2.putText(frame, score_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
 
     def run(self):
         while True:
@@ -75,6 +79,8 @@ class GameController:
                 self.detect_cut_fruit(hand_position)
                 self.detect_cut_bomb(hand_position)
 
+            #mostra il punteggio
+            self.display_score(frame)
             cv2.imshow("Fruit Ninja Game", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break

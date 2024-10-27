@@ -18,19 +18,12 @@ class Fruit:
     def update_position(self):
         if not self.is_cut:
             self.y += self.speed  # Aggiorna posizione (fa "cadere" la frutta)
-        elif self.cut_time and (time.time() - self.cut_time > 2):
-            # Rimuovi l'immagine tagliata dopo 2 secondi
-            self.is_cut = True
 
     def check_collision(self, hand_position):
-        if hand_position and not self.is_cut:
+        if hand_position:
             hand_x, hand_y = int(hand_position.x * 640), int(hand_position.y * 480)
             distance = ((hand_x - self.x) ** 2 + (hand_y - self.y) ** 2) ** 0.5
-            if distance < 50:
-                self.is_cut = True
-                self.cut_time = time.time()  # Salva il timestamp del taglio
-                return True
-        return False
+            return distance < 50  # Distanza limite per rilevare un taglio
 
     def draw(self, frame):
         """

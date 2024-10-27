@@ -3,6 +3,8 @@ import cv2
 
 class Bomb:
     def __init__(self):
+        # Carica le immagini del frutto e della versione tagliata
+        self.image = cv2.imread("C:/Users/giamm/Desktop/fruitNinja_opencv/assets/images/bomb.png",cv2.IMREAD_UNCHANGED)
         self.x = random.randint(50, 600)  # Posizione orizzontale iniziale
         self.y = 0                         # Inizio dall'alto dello schermo
         self.speed = random.randint(5, 10)  # Velocità di caduta
@@ -19,6 +21,18 @@ class Bomb:
             return distance < 50  # Distanza limite per rilevare un taglio
 
     def draw(self, frame):
-        if not self.is_cut:
-            # Disegna un cerchio per rappresentare la bomba
-            cv2.circle(frame, (self.x, self.y), 20, (55, 0, 255), -1)
+        h, w, _ = self.image.shape  # Ottieni altezza e larghezza dell'immagine del frutto
+        # Controlla che l'immagine non esca dai bordi del frame
+        if self.y + h >= frame.shape[0] or self.x + w >= frame.shape[1]:
+            return
+
+        # Estrai il canale alpha dell'immagine per gestire la trasparenza
+        alpha_s = self.image[:, :, 3] / 255.0  # Canale alpha normalizzato
+        alpha_l = 1.0 - alpha_s  # Trasparenza inversa per il frame di background
+
+        # Sovrapponi i canali BGR dell'immagine del frutto sul frame
+        for c in range(3):  # Ciclo sui canali BGR
+            frame[self.y:self.y + h, self.x:self.x + w, c] = (
+                    alpha_s * self.image[:, :, c] +  # Pixel del frutto con trasparenza
+                    alpha_l * frame[self.y:self.y + h, self.x:self.x + w, c]  # Pixel del frame di background
+            )
