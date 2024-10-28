@@ -1,7 +1,6 @@
 import random
 import cv2
 
-
 class Fruit:
     def __init__(self):
         # Carica le immagini del frutto e della versione tagliata
